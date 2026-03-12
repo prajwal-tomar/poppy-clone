@@ -1,4 +1,4 @@
-# Tech Stack — Visual AI Workspace
+# Tech Stack — Thinkboard
 
 > Last updated: March 2, 2026
 > All versions verified against npm registry as of this date.

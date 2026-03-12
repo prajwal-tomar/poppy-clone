@@ -1,4 +1,4 @@
-# Visual AI Workspace
+# Thinkboard
 
 An affordable, visual AI workspace where creators drag-and-drop YouTube videos, PDFs, images, and voice notes onto a canvas and use AI to research, brainstorm, and write content — all in one place.
 
@@ -25,7 +25,7 @@ An affordable, visual AI workspace where creators drag-and-drop YouTube videos, 
 1. Clone the repository:
    ```bash
    git clone <your-repo-url>
-   cd poppy-clone
+   cd thinkboard
    ```
 
 2. Install dependencies:

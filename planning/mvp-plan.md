@@ -1,4 +1,4 @@
-# MVP Plan — Visual AI Workspace
+# MVP Plan — Thinkboard
 
 > Last updated: March 2, 2026
 

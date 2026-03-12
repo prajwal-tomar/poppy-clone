@@ -1,4 +1,4 @@
-# UI Development Plan — Visual AI Workspace
+# UI Development Plan — Thinkboard
 
 > Last updated: March 2, 2026
 > Source: planning/mvp-plan.md
