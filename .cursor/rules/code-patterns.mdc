@@ -1,0 +1,46 @@
+---
+description: Code architecture and patterns for Thinkboard
+alwaysApply: true
+---
+
+# Code Patterns
+
+## Tech Stack
+
+- **Framework**: Next.js 16 (App Router) + TypeScript
+- **Styling**: Tailwind CSS 4 + shadcn/ui + Lucide React icons
+- **Canvas**: React Flow (`@xyflow/react`)
+- **Rich Text**: Tiptap v3
+- **State**: Zustand
+- **Auth + DB + Storage**: Supabase
+- **AI**: Vercel AI SDK (`ai`) + OpenAI
+- **Payments**: Polar.sh
+- **Validation**: Zod
+
+## File Conventions
+
+- Pages go in `src/app/<route>/page.tsx` (App Router).
+- Reusable components go in `src/components/`.
+- Canvas node components go in `src/components/nodes/`.
+- Zustand stores go in `src/stores/`.
+- Server Actions go in the relevant `src/app/<route>/actions.ts` or a shared `src/lib/actions/`.
+- Supabase client helpers go in `src/lib/supabase/`.
+- Type definitions go in `src/types/`.
+
+## Component Rules
+
+- Use shadcn/ui components before building custom ones.
+- Use Lucide React for all icons — never import from other icon libraries.
+- All forms must validate with Zod schemas.
+- Client components must be marked with `"use client"` only when necessary (hooks, browser APIs, interactivity). Default to Server Components.
+- Use Zustand for client-side UI/canvas state. Use Supabase for all persisted data.
+
+## AI Chat Pattern
+
+- Use Vercel AI SDK `useChat()` for the AI Chat Node — handles streaming, message state, and abort.
+- Use the direct `openai` package only server-side for Whisper transcription and Vision calls.
+
+## Auth Pattern
+
+- Use `@supabase/ssr` for server-side auth in middleware and Server Components.
+- Protect all `/dashboard`, `/board/*`, `/settings`, `/billing` routes via middleware.

@@ -1,0 +1,62 @@
+---
+description: Design system tokens and component styles for all UI work
+globs: src/**/*.tsx, src/**/*.ts, src/**/*.css
+alwaysApply: false
+---
+
+# Design System
+
+The canonical reference is `planning/style-guide.md`. Always read it before building or modifying UI. Below are the key tokens for quick access.
+
+## Fonts
+
+- **Headings**: `font-heading` (Plus Jakarta Sans, loaded via `--font-jakarta`)
+- **Body**: `font-sans` (Inter, loaded via `--font-inter`)
+- Never use system fonts, Geist, or other font families.
+
+## Color Tokens
+
+| Tailwind Class | Hex | When to use |
+|---|---|---|
+| `bg-background` | #FDFBF7 | Page backgrounds |
+| `bg-white` / `bg-card` | #FFFFFF | Cards, surfaces, inputs |
+| `bg-primary` / `text-primary` | #1A1A1A | CTAs, headings, primary text |
+| `bg-secondary` | #F2F0EB | Tags, secondary fills |
+| `bg-accent` | #FF5C35 | Logo, highlights only |
+| `text-muted-foreground` | #666666 | Descriptions, subtext |
+| `border-border` | #EAEAEA | All borders |
+
+## Typography Scale
+
+| Level | Classes |
+|---|---|
+| H1 | `font-heading text-[64px] font-extrabold leading-[1.1]` |
+| H2 | `font-heading text-[40px] font-bold leading-[1.2]` |
+| H3 | `font-heading text-[24px] font-semibold leading-[1.3]` |
+| Body | `font-sans text-[16px] font-normal leading-[1.6]` |
+| Body Small | `font-sans text-[14px] font-normal leading-[1.5]` |
+| Caption | `font-sans text-[12px] font-medium leading-[1.4]` |
+
+## Buttons
+
+All buttons use `rounded-full font-sans text-[14px] font-medium px-5 py-2.5`.
+
+- **Primary**: `bg-primary text-primary-foreground` / hover: `bg-[#333333]` / disabled: `bg-primary/50`
+- **Secondary**: `bg-white text-primary border border-border` / hover: `bg-[#F9F9F9]` / disabled: `text-primary/50 border-border/50`
+- **Ghost**: `bg-transparent text-muted-foreground` / hover: `bg-black/5 text-primary` / disabled: `text-muted-foreground/50`
+
+## Cards
+
+`bg-white border border-border rounded-lg p-6` — no shadow by default.
+
+## Inputs
+
+- Default: `bg-white border border-border rounded-md px-[20px] py-[12px] text-[16px] placeholder:text-[#999999]`
+- Focus: `border-primary outline outline-2 outline-[rgba(26,26,26,0.2)] outline-offset-2`
+
+## Rules
+
+- Use Tailwind utility classes only. No inline styles, no custom CSS.
+- Every interactive element must have a hover state.
+- Maintain generous whitespace between sections. Never cram elements together.
+- Use `shadow-sm`, `shadow-md`, `shadow-lg` from the theme — the design relies on borders and color contrast for depth, not heavy shadows.

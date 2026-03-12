@@ -1,0 +1,39 @@
+---
+description: Product context and planning documents for Thinkboard
+alwaysApply: true
+---
+
+# Project Context — Thinkboard
+
+An affordable, visual AI workspace where creators drag-and-drop YouTube videos, PDFs, images, and voice notes onto a canvas and use AI to research, brainstorm, and write content — all in one place.
+
+## Source of Truth
+
+Read these files before building any feature or screen:
+
+- **Features & scope**: `planning/mvp-plan.md`
+- **Screens & interactions**: `planning/ui-plan.md`
+- **Design tokens**: `planning/style-guide.md`
+- **Dependencies**: `planning/tech-stack.md`
+
+## Screen Inventory
+
+| # | Screen | Route |
+|---|--------|-------|
+| 1 | Landing Page | `/` |
+| 2 | Sign Up | `/signup` |
+| 3 | Log In | `/login` |
+| 4 | Forgot Password | `/forgot-password` |
+| 5 | Reset Password | `/reset-password` |
+| 6 | Dashboard | `/dashboard` |
+| 7 | Canvas Workspace | `/board/:id` |
+| 8 | Account Settings | `/settings` |
+| 9 | Billing | `/billing` |
+| 10 | Upgrade Modal | (overlay) |
+
+## Constraints
+
+- Do not add features, screens, or routes not defined in the planning docs.
+- Do not add npm packages not listed in `planning/tech-stack.md` without explicit approval.
+- Free tier: 3 boards, 30 AI messages/day, YouTube + PDF + text only, GPT-4o mini.
+- Pro tier: Unlimited boards, 200 AI messages/day, all input types, GPT-4o.
