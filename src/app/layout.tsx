@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, Inter } from "next/font/google";
+import { PlanProvider } from "@/components/app/plan-provider";
 import "./globals.css";
 
 const jakarta = Plus_Jakarta_Sans({
@@ -28,7 +29,7 @@ export default function RootLayout({
       <body
         className={`${jakarta.variable} ${inter.variable} antialiased`}
       >
-        {children}
+        <PlanProvider>{children}</PlanProvider>
       </body>
     </html>
   );
