@@ -71,11 +71,13 @@ export function Hero() {
 
           <div className="rounded-xl border border-border bg-white shadow-lg overflow-hidden">
             <Image
-              src="https://images.unsplash.com/photo-1611224923853-80b023f02d71?w=1400&h=900&fit=crop&q=80"
+              src="/hero-canvas.png"
               alt="Thinkboard visual AI workspace with research sources on a canvas"
-              width={1400}
-              height={900}
+              width={3840}
+              height={1982}
               className="w-full h-auto"
+              quality={100}
+              unoptimized
               priority
             />
           </div>

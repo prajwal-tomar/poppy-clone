@@ -16,8 +16,8 @@ State            Zustand
 Auth             Supabase Auth (Google OAuth + email/password)
 Database         Supabase PostgreSQL + Row Level Security
 File Storage     Supabase Storage
-Server Logic     Supabase Edge Functions + Next.js Server Actions
-AI Chat          Vercel AI SDK + OpenAI GPT-4o / GPT-4o-mini
+Server Logic     Next.js Server Actions
+AI Chat          Vercel AI SDK + Latest AI models
 Transcription    OpenAI Whisper API
 Vision           OpenAI GPT-4o Vision
 Payments         Polar.sh (Merchant of Record)
