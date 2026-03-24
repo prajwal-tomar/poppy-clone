@@ -9,12 +9,12 @@
 | Phase | Area | Tasks | Complete |
 |-------|------|-------|----------|
 | 1 | Authentication Integration | 7 | 7/7 |
-| 2 | Core Feature Flow (Database + Boards + Canvas) | 10 | 0/10 |
+| 2 | Core Feature Flow (Database + Boards + Canvas) | 10 | 2/10 |
 | 3 | Secondary Features (Nodes + AI) | 9 | 0/9 |
 | 4 | Monetization (Polar.sh) | 5 | 0/5 |
 | 5 | Pro/Premium Gating | 4 | 0/4 |
 | 6 | Settings & Polish | 5 | 0/5 |
-| **Total** | | **40** | **7/40** |
+| **Total** | | **40** | **9/40** |
 
 ---
 
@@ -116,22 +116,23 @@ Phases 3 and 4 can run in parallel once Phase 2 is complete. Phase 5 requires bo
 > **Dependencies:** Phase 1 (authentication must work so we know which user owns which board).
 
 ### 2.1 — Design and create database schema
-- **Status:** Not Started
-- **Files to create:** `supabase/migrations/001_initial_schema.sql`
-- **Description:** Create all tables needed for the MVP:
-  - `profiles` (id, email, display_name, avatar_url, has_seen_onboarding, created_at)
-  - `boards` (id, user_id, name, created_at, updated_at)
-  - `nodes` (id, board_id, type, position_x, position_y, width, height, data jsonb, created_at, updated_at)
-  - `edges` (id, board_id, source_node_id, target_node_id, created_at)
-  - `chat_messages` (id, node_id, role, content, created_at)
-  - `usage` (id, user_id, date, ai_messages_count)
-  - `subscriptions` (id, user_id, polar_customer_id, polar_subscription_id, plan, status, current_period_end, created_at, updated_at)
+- **Status:** Complete
+- **Created via:** Supabase Dashboard (no local migration file)
+- **Description:** All tables created directly in Supabase:
+  - `profiles` (id, display_name, avatar_url, has_completed_tour, created_at, updated_at)
+  - `boards` (id, user_id, name, thumbnail_url, created_at, updated_at)
+  - `nodes` (id, board_id, type enum, position_x, position_y, width, height, data jsonb, z_index, created_at, updated_at)
+  - `edges` (id, board_id, source_node_id, target_node_id, source_handle, target_handle, created_at)
+  - `chat_messages` (id, node_id, role enum, content, created_at)
+  - `daily_ai_usage` (id, user_id, usage_date, message_count, created_at)
+  - `subscriptions` (id, user_id, plan enum, status enum, billing_interval enum, polar_customer_id, polar_subscription_id, current_period_start, current_period_end, cancel_at_period_end, created_at, updated_at)
 - **Acceptance criteria:**
-  - All tables created with proper foreign keys and indexes
-  - Row Level Security enabled on every table
-  - RLS policies: users can only CRUD their own data
-  - `profiles` auto-created on auth signup via trigger
-  - Cascade deletes: deleting a board deletes its nodes/edges/messages
+  - ~~All tables created with proper foreign keys and indexes~~ Done
+  - ~~Row Level Security enabled on every table~~ Done (all 7 tables)
+  - ~~RLS policies: users can only CRUD their own data~~ Done (full CRUD policies on all tables)
+  - ~~`profiles` auto-created on auth signup via trigger~~ Done (`on_auth_user_created` → `handle_new_user()`)
+  - ~~Cascade deletes: deleting a board deletes its nodes/edges/messages~~ Done (all FKs use CASCADE)
+- **Notes:** Column names differ slightly from original plan — `has_completed_tour` (not `has_seen_onboarding`), `daily_ai_usage` (not `usage`), email lives in `auth.users` (not duplicated in profiles). `updated_at` triggers exist on boards, nodes, profiles, subscriptions.
 
 ### 2.2 — Create shared TypeScript types
 - **Status:** Not Started
@@ -210,14 +211,15 @@ Phases 3 and 4 can run in parallel once Phase 2 is complete. Phase 5 requires bo
   - Files are uploaded to Supabase Storage and node `data` stores the file URL
 
 ### 2.9 — Set up Supabase Storage buckets
-- **Status:** Not Started
-- **Files to create:** `supabase/migrations/002_storage_buckets.sql`
-- **Description:** Create Storage buckets for `pdfs`, `images`, and `audio`. Set up RLS policies so users can only access their own uploads. Configure file size limits and allowed MIME types.
+- **Status:** Complete
+- **Created via:** Supabase Dashboard (no local migration file)
+- **Description:** Storage buckets created directly in Supabase with RLS policies.
 - **Acceptance criteria:**
-  - Three buckets created: `pdfs`, `images`, `audio`
-  - RLS policies restrict access to the file owner
-  - File size limits: PDFs 50MB, images 10MB, audio 25MB
-  - MIME type restrictions enforced
+  - ~~Three buckets created: `pdfs`, `images`, `audio`~~ Done (plus `avatars` bucket)
+  - ~~RLS policies restrict access to the file owner~~ Done (upload, view, delete policies on all buckets using `foldername = auth.uid()`)
+  - ~~File size limits: PDFs 50MB, images 10MB, audio 25MB~~ Done (PDFs: 20MB, images: 10MB, audio: ~25MB)
+  - ~~MIME type restrictions enforced~~ Done (PDFs: application/pdf; images: jpeg/png/gif/webp; audio: mpeg/mp4/wav/webm/ogg)
+- **Notes:** PDF limit is 20MB (not 50MB as originally planned). Avatars bucket is public with 2MB limit (jpeg/png/webp).
 
 ### 2.10 — Create file upload Server Actions
 - **Status:** Not Started

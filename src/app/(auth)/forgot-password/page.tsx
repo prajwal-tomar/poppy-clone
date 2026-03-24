@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Loader2, Mail } from "lucide-react";
@@ -13,6 +13,14 @@ export default function ForgotPasswordPage() {
   const [state, formAction, isPending] = useActionState(forgotPassword, null);
   const searchParams = useSearchParams();
   const linkExpired = searchParams.get("error") === "link_expired";
+  const lastEmailRef = useRef("");
+
+  function handleResend() {
+    if (!lastEmailRef.current || isPending) return;
+    const fd = new FormData();
+    fd.set("email", lastEmailRef.current);
+    formAction(fd);
+  }
 
   if (state?.success) {
     return (
@@ -30,10 +38,11 @@ export default function ForgotPasswordPage() {
         <p className="font-sans text-sm text-muted-foreground">
           Didn&apos;t get it?{" "}
           <button
-            onClick={() => window.location.reload()}
-            className="text-primary font-medium hover:underline"
+            onClick={handleResend}
+            disabled={isPending}
+            className="text-primary font-medium hover:underline disabled:opacity-50"
           >
-            Resend
+            {isPending ? "Sending…" : "Resend"}
           </button>
         </p>
       </div>
@@ -72,6 +81,7 @@ export default function ForgotPasswordPage() {
             type="email"
             placeholder="you@example.com"
             required
+            onChange={(e) => { lastEmailRef.current = e.target.value; }}
             className="rounded-md px-[20px] py-[12px] h-auto text-[16px] placeholder:text-[#999999]"
           />
         </div>
