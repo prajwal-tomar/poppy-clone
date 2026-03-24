@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useTransition } from "react";
 import {
   Play,
   FileText,
@@ -9,8 +9,11 @@ import {
   Type,
   Sparkles,
   Lock,
+  Loader2,
 } from "lucide-react";
 import { useReactFlow } from "@xyflow/react";
+import { toast } from "sonner";
+import { z } from "zod";
 import {
   Tooltip,
   TooltipContent,
@@ -26,36 +29,42 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { usePlan } from "@/components/app/plan-provider";
 import { UpgradeModal } from "@/components/app/upgrade-modal";
+import { useBoardStore } from "@/stores/board-store";
+import { uploadPDF, uploadImage } from "@/lib/actions/file-actions";
+
+const youtubeUrlSchema = z
+  .string()
+  .url()
+  .refine(
+    (url) =>
+      /^https?:\/\/(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)/.test(
+        url
+      ),
+    { message: "Please enter a valid YouTube URL" }
+  );
 
 export function CanvasToolbar() {
   const { isPro } = usePlan();
-  const { setNodes, screenToFlowPosition } = useReactFlow();
+  const { screenToFlowPosition } = useReactFlow();
+  const addNode = useBoardStore((s) => s.addNode);
+  const [isPending, startTransition] = useTransition();
 
   const [youtubeOpen, setYoutubeOpen] = useState(false);
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [voiceOpen, setVoiceOpen] = useState(false);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [upgradeHeadline, setUpgradeHeadline] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
 
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
-  const addNode = useCallback(
-    (type: string) => {
-      const center = screenToFlowPosition({
-        x: window.innerWidth / 2,
-        y: window.innerHeight / 2,
-      });
-      const newNode = {
-        id: `${type}-${Date.now()}`,
-        type,
-        position: { x: center.x - 140, y: center.y - 100 },
-        data: {},
-      };
-      setNodes((prev) => [...prev, newNode]);
-    },
-    [setNodes, screenToFlowPosition]
-  );
+  const getViewportCenter = useCallback(() => {
+    return screenToFlowPosition({
+      x: window.innerWidth / 2,
+      y: window.innerHeight / 2,
+    });
+  }, [screenToFlowPosition]);
 
   const openUpgrade = useCallback((headline: string) => {
     setUpgradeHeadline(headline);
@@ -63,19 +72,56 @@ export function CanvasToolbar() {
   }, []);
 
   const handleYoutubeAdd = useCallback(() => {
-    addNode("youtube");
+    const parsed = youtubeUrlSchema.safeParse(youtubeUrl);
+    if (!parsed.success) {
+      toast.error("Please enter a valid YouTube URL");
+      return;
+    }
+
+    const center = getViewportCenter();
+    addNode("youtube", { x: center.x - 140, y: center.y - 100 }, {
+      url: parsed.data,
+      status: "pending",
+    });
+
     setYoutubeUrl("");
     setYoutubeOpen(false);
-  }, [addNode]);
+  }, [youtubeUrl, addNode, getViewportCenter]);
 
   const handlePdfClick = useCallback(() => {
     pdfInputRef.current?.click();
   }, []);
 
-  const handlePdfSelect = useCallback(() => {
-    addNode("pdf");
-    if (pdfInputRef.current) pdfInputRef.current.value = "";
-  }, [addNode]);
+  const handlePdfSelect = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      setIsUploading(true);
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const result = await uploadPDF(formData);
+
+      if ("error" in result) {
+        toast.error(result.error);
+        setIsUploading(false);
+        if (pdfInputRef.current) pdfInputRef.current.value = "";
+        return;
+      }
+
+      const center = getViewportCenter();
+      await addNode("pdf", { x: center.x - 140, y: center.y - 100 }, {
+        fileUrl: result.url,
+        fileName: file.name,
+        status: "pending",
+      });
+
+      setIsUploading(false);
+      if (pdfInputRef.current) pdfInputRef.current.value = "";
+    },
+    [addNode, getViewportCenter]
+  );
 
   const handleImageClick = useCallback(() => {
     if (!isPro) {
@@ -85,10 +131,35 @@ export function CanvasToolbar() {
     imageInputRef.current?.click();
   }, [isPro, openUpgrade]);
 
-  const handleImageSelect = useCallback(() => {
-    addNode("image");
-    if (imageInputRef.current) imageInputRef.current.value = "";
-  }, [addNode]);
+  const handleImageSelect = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      setIsUploading(true);
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const result = await uploadImage(formData);
+
+      if ("error" in result) {
+        toast.error(result.error);
+        setIsUploading(false);
+        if (imageInputRef.current) imageInputRef.current.value = "";
+        return;
+      }
+
+      const center = getViewportCenter();
+      await addNode("image", { x: center.x - 140, y: center.y - 100 }, {
+        fileUrl: result.url,
+        fileName: file.name,
+      });
+
+      setIsUploading(false);
+      if (imageInputRef.current) imageInputRef.current.value = "";
+    },
+    [addNode, getViewportCenter]
+  );
 
   const handleVoiceClick = useCallback(() => {
     if (!isPro) {
@@ -98,10 +169,25 @@ export function CanvasToolbar() {
     setVoiceOpen(true);
   }, [isPro, openUpgrade]);
 
-  const handleVoiceStop = useCallback(() => {
-    addNode("voiceNote");
+  const handleVoiceStop = useCallback(async () => {
+    const center = getViewportCenter();
+    await addNode("voiceNote", { x: center.x - 130, y: center.y - 70 }, {
+      status: "recording",
+    });
     setVoiceOpen(false);
-  }, [addNode]);
+  }, [addNode, getViewportCenter]);
+
+  const handleTextAdd = useCallback(async () => {
+    const center = getViewportCenter();
+    await addNode("textEditor", { x: center.x - 160, y: center.y - 120 }, {
+      content: "",
+    });
+  }, [addNode, getViewportCenter]);
+
+  const handleAiChatAdd = useCallback(async () => {
+    const center = getViewportCenter();
+    await addNode("aiChat", { x: center.x - 180, y: center.y - 200 }, {});
+  }, [addNode, getViewportCenter]);
 
   return (
     <>
@@ -134,7 +220,10 @@ export function CanvasToolbar() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <PopoverTrigger asChild>
-                    <button className="relative size-9 flex items-center justify-center rounded-full hover:bg-secondary transition-colors">
+                    <button
+                      disabled={isUploading}
+                      className="relative size-9 flex items-center justify-center rounded-full hover:bg-secondary transition-colors disabled:opacity-50"
+                    >
                       <Play className="size-4 text-muted-foreground" />
                     </button>
                   </PopoverTrigger>
@@ -153,6 +242,9 @@ export function CanvasToolbar() {
                     onChange={(e) => setYoutubeUrl(e.target.value)}
                     placeholder="Paste a YouTube URL..."
                     className="h-8 text-xs rounded-md"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleYoutubeAdd();
+                    }}
                   />
                   <Button
                     onClick={handleYoutubeAdd}
@@ -170,9 +262,14 @@ export function CanvasToolbar() {
               <TooltipTrigger asChild>
                 <button
                   onClick={handlePdfClick}
-                  className="relative size-9 flex items-center justify-center rounded-full hover:bg-secondary transition-colors"
+                  disabled={isUploading}
+                  className="relative size-9 flex items-center justify-center rounded-full hover:bg-secondary transition-colors disabled:opacity-50"
                 >
-                  <FileText className="size-4 text-muted-foreground" />
+                  {isUploading ? (
+                    <Loader2 className="size-4 text-muted-foreground animate-spin" />
+                  ) : (
+                    <FileText className="size-4 text-muted-foreground" />
+                  )}
                 </button>
               </TooltipTrigger>
               <TooltipContent>
@@ -185,7 +282,8 @@ export function CanvasToolbar() {
               <TooltipTrigger asChild>
                 <button
                   onClick={handleImageClick}
-                  className="relative size-9 flex items-center justify-center rounded-full hover:bg-secondary transition-colors"
+                  disabled={isUploading}
+                  className="relative size-9 flex items-center justify-center rounded-full hover:bg-secondary transition-colors disabled:opacity-50"
                 >
                   <ImageIcon className="size-4 text-muted-foreground" />
                   {!isPro && (
@@ -207,7 +305,8 @@ export function CanvasToolbar() {
                   <PopoverTrigger asChild>
                     <button
                       onClick={handleVoiceClick}
-                      className="relative size-9 flex items-center justify-center rounded-full hover:bg-secondary transition-colors"
+                      disabled={isUploading}
+                      className="relative size-9 flex items-center justify-center rounded-full hover:bg-secondary transition-colors disabled:opacity-50"
                     >
                       <Mic className="size-4 text-muted-foreground" />
                       {!isPro && (
@@ -218,12 +317,18 @@ export function CanvasToolbar() {
                 </TooltipTrigger>
                 <TooltipContent>
                   <p className="text-xs">
-                    {!isPro ? "Upgrade to Pro to use Voice Note" : "Voice Note"}
+                    {!isPro
+                      ? "Upgrade to Pro to use Voice Note"
+                      : "Voice Note"}
                   </p>
                 </TooltipContent>
               </Tooltip>
               {isPro && (
-                <PopoverContent className="w-56 p-4" side="top" sideOffset={12}>
+                <PopoverContent
+                  className="w-56 p-4"
+                  side="top"
+                  sideOffset={12}
+                >
                   <p className="font-sans text-xs font-medium mb-3 text-center">
                     Voice Recording
                   </p>
@@ -250,8 +355,9 @@ export function CanvasToolbar() {
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
-                  onClick={() => addNode("textEditor")}
-                  className="relative size-9 flex items-center justify-center rounded-full hover:bg-secondary transition-colors"
+                  onClick={handleTextAdd}
+                  disabled={isUploading}
+                  className="relative size-9 flex items-center justify-center rounded-full hover:bg-secondary transition-colors disabled:opacity-50"
                 >
                   <Type className="size-4 text-muted-foreground" />
                 </button>
@@ -265,8 +371,9 @@ export function CanvasToolbar() {
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
-                  onClick={() => addNode("aiChat")}
-                  className="relative size-9 flex items-center justify-center rounded-full hover:bg-secondary transition-colors"
+                  onClick={handleAiChatAdd}
+                  disabled={isUploading}
+                  className="relative size-9 flex items-center justify-center rounded-full hover:bg-secondary transition-colors disabled:opacity-50"
                 >
                   <Sparkles className="size-4 text-muted-foreground" />
                 </button>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useRef } from "react";
+import { Suspense, useActionState, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Loader2, Mail } from "lucide-react";
@@ -10,6 +10,14 @@ import { Label } from "@/components/ui/label";
 import { forgotPassword } from "./actions";
 
 export default function ForgotPasswordPage() {
+  return (
+    <Suspense>
+      <ForgotPasswordContent />
+    </Suspense>
+  );
+}
+
+function ForgotPasswordContent() {
   const [state, formAction, isPending] = useActionState(forgotPassword, null);
   const searchParams = useSearchParams();
   const linkExpired = searchParams.get("error") === "link_expired";

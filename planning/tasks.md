@@ -1,6 +1,6 @@
 # MVP Task Breakdown — Thinkboard
 
-> Last updated: March 20, 2026
+> Last updated: March 24, 2026
 
 ---
 
@@ -9,12 +9,12 @@
 | Phase | Area | Tasks | Complete |
 |-------|------|-------|----------|
 | 1 | Authentication Integration | 7 | 7/7 |
-| 2 | Core Feature Flow (Database + Boards + Canvas) | 10 | 2/10 |
+| 2 | Core Feature Flow (Database + Boards + Canvas) | 10 | 10/10 |
 | 3 | Secondary Features (Nodes + AI) | 9 | 0/9 |
 | 4 | Monetization (Polar.sh) | 5 | 0/5 |
 | 5 | Pro/Premium Gating | 4 | 0/4 |
 | 6 | Settings & Polish | 5 | 0/5 |
-| **Total** | | **40** | **9/40** |
+| **Total** | | **40** | **17/40** |
 
 ---
 
@@ -135,80 +135,82 @@ Phases 3 and 4 can run in parallel once Phase 2 is complete. Phase 5 requires bo
 - **Notes:** Column names differ slightly from original plan — `has_completed_tour` (not `has_seen_onboarding`), `daily_ai_usage` (not `usage`), email lives in `auth.users` (not duplicated in profiles). `updated_at` triggers exist on boards, nodes, profiles, subscriptions.
 
 ### 2.2 — Create shared TypeScript types
-- **Status:** Not Started
-- **Files to create:** `src/types/database.ts`, `src/types/board.ts`, `src/types/node.ts`
-- **Description:** Define TypeScript types that mirror the database schema. Include types for board cards (dashboard), node data variants (YouTube, PDF, image, voice, text, AI chat), edge data, and chat messages.
+- **Status:** Complete
+- **Files created:** `src/types/database.ts`, `src/types/board.ts`, `src/types/node.ts`
+- **Description:** Auto-generated Supabase types via MCP `generate_typescript_types`, plus convenience aliases and node data discriminated unions. Supabase clients (`client.ts`, `server.ts`) updated with `Database` generic for typed queries. Includes DB-to-ReactFlow node type mapping functions.
 - **Acceptance criteria:**
-  - Types match the database schema exactly
-  - Node `data` field is a discriminated union by node type
-  - All components can import from `@/types/*`
+  - ~~Types match the database schema exactly~~ Done
+  - ~~Node `data` field is a discriminated union by node type~~ Done
+  - ~~All components can import from `@/types/*`~~ Done
 
 ### 2.3 — Create Zustand board store
-- **Status:** Not Started
-- **Files to create:** `src/stores/board-store.ts`
-- **Description:** Zustand store for the canvas workspace managing nodes, edges, and React Flow state. Actions: `addNode`, `updateNode`, `removeNode`, `addEdge`, `removeEdge`, `onNodesChange`, `onEdgesChange`, `onConnect`. Handles loading board data from Supabase and persisting changes.
+- **Status:** Complete
+- **Files created:** `src/stores/board-store.ts`
+- **Description:** Zustand store bridging React Flow state with Supabase persistence. Uses browser Supabase client for real-time CRUD. Position/dimension changes debounced at 1s. Node data updates debounced per-node. Includes `loadBoard`, `addNode`, `removeNode`, `updateNodeData`, `onNodesChange`, `onEdgesChange`, `onConnect`, save indicator state.
 - **Acceptance criteria:**
-  - Store provides all state React Flow needs (`nodes`, `edges`, handlers)
-  - `loadBoard(boardId)` fetches from Supabase and populates store
-  - Changes are debounce-persisted to Supabase
-  - Adding/removing nodes and edges syncs to the database
+  - ~~Store provides all state React Flow needs (`nodes`, `edges`, handlers)~~ Done
+  - ~~`loadBoard(boardId)` fetches from Supabase and populates store~~ Done
+  - ~~Changes are debounce-persisted to Supabase~~ Done (1s debounce)
+  - ~~Adding/removing nodes and edges syncs to the database~~ Done
 
 ### 2.4 — Create board CRUD Server Actions
-- **Status:** Not Started
-- **Files to create:** `src/lib/actions/board-actions.ts`
-- **Description:** Server Actions for: `createBoard`, `renameBoard`, `duplicateBoard`, `deleteBoard`, `getBoards` (for dashboard), `getBoard` (for canvas). Validate inputs with Zod. Check user auth. Enforce free-tier 3-board limit.
+- **Status:** Complete
+- **Files created:** `src/lib/actions/board-actions.ts`
+- **Description:** Server Actions: `getBoards`, `getBoard`, `createBoard`, `renameBoard`, `duplicateBoard`, `deleteBoard`, `getBoardCount`, `getUserProfile`, `createBoardAndRedirect`. Uses `can_create_board` Postgres function for free-tier limit. Zod validation on inputs. RLS handles authorization.
 - **Acceptance criteria:**
-  - All actions authenticate the user via Supabase server client
-  - `createBoard` checks board count against plan limit (3 for free)
-  - `duplicateBoard` deep-copies nodes, edges, and messages
-  - `deleteBoard` cascade-deletes all related data
-  - Inputs validated with Zod schemas
+  - ~~All actions authenticate the user via Supabase server client~~ Done
+  - ~~`createBoard` checks board count against plan limit (3 for free)~~ Done (via `can_create_board` RPC)
+  - ~~`duplicateBoard` deep-copies nodes, edges, and messages~~ Done (with ID remapping)
+  - ~~`deleteBoard` cascade-deletes all related data~~ Done (FK cascades)
+  - ~~Inputs validated with Zod schemas~~ Done
 
 ### 2.5 — Wire up Dashboard to real board data
-- **Status:** Not Started
-- **Files to modify:** `src/app/(app)/dashboard/page.tsx`
-- **Description:** Replace mock board data with a real Supabase query. Wire up "+ New Board" to `createBoard` action (redirect to `/board/[id]`). Wire up three-dot menu actions (rename, duplicate, delete) to their respective Server Actions. Show board count indicator ("2 of 3 boards used" for free tier).
+- **Status:** Complete
+- **Files modified:** `src/app/(app)/dashboard/page.tsx` (converted to Server Component)
+- **Files created:** `src/app/(app)/dashboard/dashboard-client.tsx`
+- **Description:** Dashboard page is now a Server Component that fetches boards, board count, and profile server-side. Client component handles all interactivity: create, rename (dialog), duplicate, delete (AlertDialog confirmation). Empty state for new users. Real timestamps via `date-fns`.
 - **Acceptance criteria:**
-  - Dashboard shows the user's actual boards from the database
-  - Empty state shown for new users with no boards
-  - Creating a board navigates to the new board's canvas
-  - Rename updates board name in real time
-  - Delete shows confirmation dialog, then removes the board
-  - Duplicate creates a copy and shows it in the grid
-  - Free tier board limit enforced (shows upgrade modal at 3/3)
-  - "Edited X ago" shows real timestamps via `date-fns`
+  - ~~Dashboard shows the user's actual boards from the database~~ Done
+  - ~~Empty state shown for new users with no boards~~ Done
+  - ~~Creating a board navigates to the new board's canvas~~ Done
+  - ~~Rename updates board name in real time~~ Done (via dialog)
+  - ~~Delete shows confirmation dialog, then removes the board~~ Done (AlertDialog)
+  - ~~Duplicate creates a copy and shows it in the grid~~ Done
+  - ~~Free tier board limit enforced (shows upgrade modal at 3/3)~~ Done
+  - ~~"Edited X ago" shows real timestamps via `date-fns`~~ Done
 
 ### 2.6 — Wire up Canvas to load/save board state
-- **Status:** Not Started
-- **Files to modify:** `src/app/board/[id]/page.tsx`
-- **Description:** On load, fetch the board's nodes and edges from Supabase and hydrate the Zustand store. Pipe store state into React Flow. Save node position/size changes, new nodes, and new edges back to the database (debounced). Show the board name in the top bar (editable inline). Show 404 if board doesn't exist or doesn't belong to user.
+- **Status:** Complete
+- **Files modified:** `src/app/board/[id]/page.tsx` (converted to Server Component with auth/ownership check)
+- **Files created:** `src/app/board/[id]/board-canvas.tsx`
+- **Description:** Board page validates auth and ownership server-side, redirects otherwise. Client component loads board via Zustand store, binds React Flow, supports inline rename, save indicator, real avatar/logout, AI usage badge, and drop zone.
 - **Acceptance criteria:**
-  - Opening `/board/[id]` loads nodes and edges from DB
-  - Moving/resizing nodes persists positions to DB (debounced ~1s)
-  - Adding connections (edges) persists immediately
-  - Deleting nodes/edges removes them from DB
-  - Board name is editable inline and saves on blur
-  - Unauthorized access redirects to `/dashboard`
+  - ~~Opening `/board/[id]` loads nodes and edges from DB~~ Done
+  - ~~Moving/resizing nodes persists positions to DB (debounced ~1s)~~ Done
+  - ~~Adding connections (edges) persists immediately~~ Done
+  - ~~Deleting nodes/edges removes them from DB~~ Done
+  - ~~Board name is editable inline and saves on blur~~ Done
+  - ~~Unauthorized access redirects to `/dashboard`~~ Done
 
 ### 2.7 — Wire up Canvas Toolbar to create real nodes
-- **Status:** Not Started
-- **Files to modify:** `src/components/app/canvas-toolbar.tsx`
-- **Description:** Connect each toolbar button to the Zustand store's `addNode` action with the correct node type. YouTube button opens URL popover, PDF/Image open file picker, Voice Note opens recorder, Text/AI Chat create immediately. New nodes are placed at viewport center.
+- **Status:** Complete
+- **Files modified:** `src/components/app/canvas-toolbar.tsx`
+- **Description:** Toolbar buttons use Zustand `addNode` with correct type and initial data. YouTube validates URL with Zod. PDF/Image trigger file upload server actions with loading indicators. Text/AI Chat create immediately. All nodes placed at viewport center.
 - **Acceptance criteria:**
-  - Each toolbar button creates the correct node type
-  - Nodes appear at the center of the current viewport
-  - New nodes are persisted to the database
-  - YouTube popover accepts a URL and creates a YouTube node
+  - ~~Each toolbar button creates the correct node type~~ Done
+  - ~~Nodes appear at the center of the current viewport~~ Done
+  - ~~New nodes are persisted to the database~~ Done
+  - ~~YouTube popover accepts a URL and creates a YouTube node~~ Done (with Zod validation)
 
 ### 2.8 — Implement drag-and-drop file upload on canvas
-- **Status:** Not Started
-- **Files to modify:** `src/app/board/[id]/page.tsx`
-- **Description:** Use `react-dropzone` to wrap the canvas. Detect file types on drop: PDFs become PDF nodes, images become image nodes, audio files become voice note nodes. Show drop overlay with dashed border. Show toast error for unsupported types.
+- **Status:** Complete
+- **Files modified:** `src/app/board/[id]/board-canvas.tsx`
+- **Description:** `react-dropzone` wraps the canvas with type detection. PDFs upload and create PDF nodes. Images/audio gated for Pro users (shows upgrade modal). Drop overlay with dashed border. Unsupported types show error toast. Drop position mapped to canvas coordinates.
 - **Acceptance criteria:**
-  - Dragging files over canvas shows "Drop to add to your board" overlay
-  - PDFs create PDF nodes, images create image nodes, audio creates voice note nodes
-  - Unsupported file types show an error toast
-  - Files are uploaded to Supabase Storage and node `data` stores the file URL
+  - ~~Dragging files over canvas shows "Drop to add to your board" overlay~~ Done
+  - ~~PDFs create PDF nodes, images create image nodes, audio creates voice note nodes~~ Done (with Pro gating on images/audio)
+  - ~~Unsupported file types show an error toast~~ Done
+  - ~~Files are uploaded to Supabase Storage and node `data` stores the file URL~~ Done
 
 ### 2.9 — Set up Supabase Storage buckets
 - **Status:** Complete
@@ -222,14 +224,14 @@ Phases 3 and 4 can run in parallel once Phase 2 is complete. Phase 5 requires bo
 - **Notes:** PDF limit is 20MB (not 50MB as originally planned). Avatars bucket is public with 2MB limit (jpeg/png/webp).
 
 ### 2.10 — Create file upload Server Actions
-- **Status:** Not Started
-- **Files to create:** `src/lib/actions/file-actions.ts`
-- **Description:** Server Actions for uploading files to Supabase Storage and generating signed URLs. Actions: `uploadPDF`, `uploadImage`, `uploadAudio`. Each validates file type/size, uploads to the correct bucket, and returns a signed URL.
+- **Status:** Complete
+- **Files created:** `src/lib/actions/file-actions.ts`
+- **Description:** Server Actions `uploadPDF`, `uploadImage`, `uploadAudio` with shared helper. Validates MIME types and file sizes via Zod. Uploads to user-scoped paths in Supabase Storage. Returns signed URLs with 7-day expiry.
 - **Acceptance criteria:**
-  - Files upload to the correct Supabase Storage bucket
-  - Signed URLs returned for file access
-  - File type and size validation with Zod
-  - User authentication checked before upload
+  - ~~Files upload to the correct Supabase Storage bucket~~ Done
+  - ~~Signed URLs returned for file access~~ Done (7-day expiry)
+  - ~~File type and size validation with Zod~~ Done
+  - ~~User authentication checked before upload~~ Done
 
 ---
 
