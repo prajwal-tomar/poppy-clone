@@ -119,19 +119,30 @@ function BoardCanvasInner({ boardId, initialBoardName }: BoardCanvasProps) {
 
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => {
-      setUser(data.user);
-      if (data.user) {
-        supabase
-          .rpc("get_ai_usage_today", { p_user_id: data.user.id })
-          .then(({ data: usage }) => {
-            if (usage) {
-              const parsed = usage as { used: number; limit: number };
-              setAiUsage(parsed);
-            }
-          });
-      }
-    });
+
+    const fetchUsage = () => {
+      supabase.auth.getUser().then(({ data }) => {
+        setUser(data.user);
+        if (data.user) {
+          supabase
+            .rpc("get_ai_usage_today", { p_user_id: data.user.id })
+            .then(({ data: usage }) => {
+              if (usage) {
+                const parsed = usage as { used: number; limit: number };
+                setAiUsage(parsed);
+              }
+            });
+        }
+      });
+    };
+
+    fetchUsage();
+
+    const handleUsageUpdate = () => fetchUsage();
+    window.addEventListener("ai-usage-updated", handleUsageUpdate);
+    return () => {
+      window.removeEventListener("ai-usage-updated", handleUsageUpdate);
+    };
   }, []);
 
   useEffect(() => {
