@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, Inter } from "next/font/google";
+import { Toaster } from "sonner";
 import { PlanProvider } from "@/components/app/plan-provider";
 import "./globals.css";
 
@@ -30,6 +31,7 @@ export default function RootLayout({
         className={`${jakarta.variable} ${inter.variable} antialiased`}
       >
         <PlanProvider>{children}</PlanProvider>
+        <Toaster richColors position="top-center" />
       </body>
     </html>
   );
